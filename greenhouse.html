@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Greenhouse Dashboard</title>
+    <style>
+        :root {
+            --primary: #2ecc71;
+            --secondary: #27ae60;
+            --warning: #f1c40f;
+            --danger: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: var(--light);
+            color: var(--dark);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .sensor-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 1rem 0;
+            color: var(--dark);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .on { background-color: var(--primary); }
+        .off { background-color: var(--danger); }
+
+        .alert-section {
+            grid-column: 1 / -1;
+            margin-top: 2rem;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .alert-warning {
+            background-color: #fef3c7;
+            border-left: 4px solid var(--warning);
+        }
+
+        .alert-danger {
+            background-color: #fee2e2;
+            border-left: 4px solid var(--danger);
+        }
+
+        .alert-info {
+            background-color: #dbeafe;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .alert-icon {
+            font-size: 1.5rem;
+            margin-right: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .sensor-value {
+                font-size: 2rem;
+            }
+            
+            .card {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🌿 Welcome to Smart Greenhouse</h1>
+            <p>Real-time monitoring and automated control system</p>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- Sensor Cards (Same as previous version) -->
+            <div class="card">
+                <h2>🌡 Temperature</h2>
+                <div class="sensor-value" id="temperature">--°C</div>
+                <div>Fan Status: <span class="status-indicator" id="fanStatus"></span></div>
+            </div>
+
+            <div class="card">
+                <h2>💧 Humidity</h2>
+                <div class="sensor-value" id="humidity">--%</div>
+            </div>
+
+           
+
+            <div class="card">
+                <h2>🌱 Soil Moisture</h2>
+                <div class="sensor-value" id="moisture">--</div>
+                <div>Pump Status: <span class="status-indicator" id="pumpStatus"></span></div>
+            </div>
+
+            <div class="card">
+                <h2>💡 Light Status</h2>
+                <div class="sensor-value" id="lightStatus"></div>
+            </div>
+
+            <!-- Alerts Section -->
+            <div class="alert-section">
+                <h2>📢 System Notifications</h2>
+                <div id="alertsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+         const API_KEY = 'LQIYHH6ZUTYNFR0H';
+         const CHANNEL_ID = '2823613';
+
+        async function updateDashboard() {
+            try {
+                const response = await fetch(
+                    `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds/last.json?api_key=${API_KEY}`
+                );
+                const data = await response.json();
+
+                // Update sensor values
+                document.getElementById('temperature').textContent = data.field1 + '°C';
+                document.getElementById('humidity').textContent = data.field2 + '%';
+                document.getElementById('moisture').textContent = data.field4;
+                document.getElementById('lightStatus').textContent = data.field8 === '1' ? 'ON 🌞' : 'OFF 🌙';
+
+                // Update status indicators
+                updateStatus('fanStatus', data.field6);
+                updateStatus('pumpStatus', data.field7);
+
+                // Generate alerts
+                generateAlerts(data);
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        function updateStatus(elementId, value) {
+            const element = document.getElementById(elementId);
+            element.className = `status-indicator ${value === '1' ? 'on' : 'off'}`;
+        }
+
+        function generateAlerts(data) {
+            const alertsContainer = document.getElementById('alertsContainer');
+            alertsContainer.innerHTML = '';
+
+            const alerts = [];
+
+            // Temperature Alerts
+            if (data.field1 > 28) {
+                alerts.push({
+                    type: 'danger',
+                    message: 'High temperature detected! Consider increasing ventilation'
+                });
+            } else if (data.field1 < 18) {
+                alerts.push({
+                    type: 'warning',
+                    message: 'Low temperature detected! Check heating system'
+                });
+            }
+
+            // Humidity Alerts
+            if (data.field2 > 80) {
+                alerts.push({
+                    type: 'warning',
+                    message: 'High humidity detected! Risk of fungal growth'
+                });
+            } else if (data.field2 < 40) {
+                alerts.push({
+                    type: 'warning',
+                    message: 'Low humidity detected! Consider misting'
+                });
+            }
+
+          
+
+            // Soil Moisture Alerts
+            if (data.field4 < 300) {
+                alerts.push({
+                    type: 'danger',
+                    message: 'Dry soil detected! Water pump activated'
+                });
+            } else if (data.field4 > 800) {
+                alerts.push({
+                    type: 'warning',
+                    message: 'Soil is waterlogged! Check drainage system'
+                });
+            }
+
+            // Light Alerts
+            if (data.field5 < 300 && data.field8 === '0') {
+                alerts.push({
+                    type: 'info',
+                    message: 'Low light conditions detected - consider activating grow lights'
+                });
+            }
+
+            // Display alerts
+            alerts.forEach(alert => {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${alert.type}`;
+                alertDiv.innerHTML = `
+                    <span class="alert-icon">${getAlertIcon(alert.type)}</span>
+                    ${alert.message}
+                `;
+                alertsContainer.appendChild(alertDiv);
+            });
+        }
+
+        function getAlertIcon(type) {
+            const icons = {
+                danger: '⚠️',
+                warning: '🔔',
+                info: 'ℹ️'
+            };
+            return icons[type] || '💡';
+        }
+
+        // Update every 5 seconds
+        setInterval(updateDashboard, 5000);
+        window.onload = updateDashboard;
+    </script>
+</body>
+</html>
