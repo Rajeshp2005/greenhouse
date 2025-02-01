@@ -135,7 +135,6 @@
         </header>
 
         <div class="dashboard-grid">
-            <!-- Sensor Cards (Same as previous version) -->
             <div class="card">
                 <h2>🌡 Temperature</h2>
                 <div class="sensor-value" id="temperature">--°C</div>
@@ -146,8 +145,6 @@
                 <h2>💧 Humidity</h2>
                 <div class="sensor-value" id="humidity">--%</div>
             </div>
-
-           
 
             <div class="card">
                 <h2>🌱 Soil Moisture</h2>
@@ -160,7 +157,6 @@
                 <div class="sensor-value" id="lightStatus"></div>
             </div>
 
-            <!-- Alerts Section -->
             <div class="alert-section">
                 <h2>📢 System Notifications</h2>
                 <div id="alertsContainer"></div>
@@ -169,118 +165,111 @@
     </div>
 
     <script>
-         const API_KEY = 'LQIYHH6ZUTYNFR0H';
-         const CHANNEL_ID = '2823613';
-
-        async function updateDashboard() {
-            try {
-                const response = await fetch(
-                    `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds/last.json?api_key=${API_KEY}`
-                );
-                const data = await response.json();
-
-                // Update sensor values
-                document.getElementById('temperature').textContent = data.field1 + '°C';
-                document.getElementById('humidity').textContent = data.field2 + '%';
-                document.getElementById('moisture').textContent = data.field4;
-                document.getElementById('lightStatus').textContent = data.field8 === '1' ? 'ON 🌞' : 'OFF 🌙';
-
-                // Update status indicators
-                updateStatus('fanStatus', data.field6);
-                updateStatus('pumpStatus', data.field7);
-
-                // Generate alerts
-                generateAlerts(data);
-
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        }
-
-        function updateStatus(elementId, value) {
-            const element = document.getElementById(elementId);
-            element.className = `status-indicator ${value === '1' ? 'on' : 'off'}`;
-        }
-
-        function generateAlerts(data) {
-            const alertsContainer = document.getElementById('alertsContainer');
-            alertsContainer.innerHTML = '';
-
-            const alerts = [];
-
-            // Temperature Alerts
-            if (data.field1 > 28) {
-                alerts.push({
-                    type: 'danger',
-                    message: 'High temperature detected! Consider increasing ventilation'
-                });
-            } else if (data.field1 < 18) {
-                alerts.push({
-                    type: 'warning',
-                    message: 'Low temperature detected! Check heating system'
-                });
-            }
-
-            // Humidity Alerts
-            if (data.field2 > 80) {
-                alerts.push({
-                    type: 'warning',
-                    message: 'High humidity detected! Risk of fungal growth'
-                });
-            } else if (data.field2 < 40) {
-                alerts.push({
-                    type: 'warning',
-                    message: 'Low humidity detected! Consider misting'
-                });
-            }
-
-          
-
-            // Soil Moisture Alerts
-            if (data.field4 < 300) {
-                alerts.push({
-                    type: 'danger',
-                    message: 'Dry soil detected! Water pump activated'
-                });
-            } else if (data.field4 > 800) {
-                alerts.push({
-                    type: 'warning',
-                    message: 'Soil is waterlogged! Check drainage system'
-                });
-            }
-
-            // Light Alerts
-            if (data.field5 < 300 && data.field8 === '0') {
-                alerts.push({
-                    type: 'info',
-                    message: 'Low light conditions detected - consider activating grow lights'
-                });
-            }
-
-            // Display alerts
-            alerts.forEach(alert => {
-                const alertDiv = document.createElement('div');
-                alertDiv.className = `alert alert-${alert.type}`;
-                alertDiv.innerHTML = `
-                    <span class="alert-icon">${getAlertIcon(alert.type)}</span>
-                    ${alert.message}
-                `;
-                alertsContainer.appendChild(alertDiv);
-            });
-        }
-
-        function getAlertIcon(type) {
-            const icons = {
-                danger: '⚠️',
-                warning: '🔔',
-                info: 'ℹ️'
-            };
-            return icons[type] || '💡';
-        }
-
-        // Update every 5 seconds
-        setInterval(updateDashboard, 5000);
-        window.onload = updateDashboard;
-    </script>
+        const API_KEY = 'VLXSU69YRSJ81KPP';
+        const CHANNEL_ID = '2826163';
+     
+         async function updateDashboard() {
+             try {
+                 const response = await fetch(
+                     `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds/last.json?api_key=${API_KEY}`
+                 );
+                 const data = await response.json();
+     
+                 // Update sensor values with rounded numbers
+                 document.getElementById('temperature').textContent = `${parseFloat(data.field1).toFixed(1)}°C`;
+                 document.getElementById('humidity').textContent = `${parseFloat(data.field2).toFixed(1)}%`;
+                 document.getElementById('moisture').textContent = `${parseInt(data.field3)}`;
+                 document.getElementById('lightStatus').textContent = data.field6 === '1' ? 'ON 🌞' : 'OFF 🌙';
+     
+                 // Update status indicators
+                 updateStatus('fanStatus', data.field4);
+                 updateStatus('pumpStatus', data.field5);
+     
+                 // Generate alerts
+                 generateAlerts(data);
+     
+             } catch (error) {
+                 console.error('Error fetching data:', error);
+             }
+         }
+     
+         function updateStatus(elementId, value) {
+             const element = document.getElementById(elementId);
+             element.className = `status-indicator ${value === '1' ? 'on' : 'off'}`;
+         }
+     
+         function generateAlerts(data) {
+             const alertsContainer = document.getElementById('alertsContainer');
+             alertsContainer.innerHTML = '';
+     
+             const alerts = [];
+     
+             // Temperature Alerts
+             if (parseFloat(data.field1) > 26) {
+                 alerts.push({
+                     type: 'danger',
+                     message: 'High temperature detected! Consider increasing ventilation'
+                 });
+             } else if (parseFloat(data.field1) < 18) {
+                 alerts.push({
+                     type: 'warning',
+                     message: 'Low temperature detected! Check heating system'
+                 });
+             }
+     
+             // Humidity Alerts
+             if (parseFloat(data.field2) > 80) {
+                 alerts.push({
+                     type: 'warning',
+                     message: 'High humidity detected! Risk of fungal growth'
+                 });
+             } else if (parseFloat(data.field2) < 40) {
+                 alerts.push({
+                     type: 'warning',
+                     message: 'Low humidity detected! Consider misting'
+                 });
+             }
+     
+             // Soil Moisture Alerts
+             if ((data.field4) < 30) {
+                 alerts.push({
+                     type: 'danger',
+                     message: 'Dry soil detected! Water pump activated'
+                 });
+             } else if ((data.field4) > 80) {
+                 alerts.push({
+                     type: 'warning',
+                     message: 'Soil is waterlogged! Check drainage system'
+                 });
+             }
+     
+           
+     
+             // Display alerts
+             alerts.forEach(alert => {
+                 const alertDiv = document.createElement('div');
+                 alertDiv.className = `alert alert-${alert.type}`;
+                 alertDiv.innerHTML = `
+                     <span class="alert-icon">${getAlertIcon(alert.type)}</span>
+                     ${alert.message}
+                 `;
+                 alertsContainer.appendChild(alertDiv);
+             });
+         }
+     
+         function getAlertIcon(type) {
+             const icons = {
+                 danger: '⚠️',
+                 warning: '🔔',
+                 info: 'ℹ️'
+             };
+             return icons[type] || '💡';
+         }
+     
+         // Update every 5 seconds
+         setInterval(updateDashboard, 5000);
+         window.onload = updateDashboard;
+     </script>
+     
 </body>
 </html>
